@@ -86,7 +86,7 @@
 
         let width = Math.min(window.innerWidth, window.innerHeight) * 0.8;
         let height = width;
-        let radius = width / 10;
+        let radius = width / 9;
 
         let darkerColors = [
             "#CC6635", "#CC9520", "#00997F", "#006ACC", "#6D6AAD", "#CC5656"
@@ -151,7 +151,7 @@
             .attr('fill-opacity', 1)
             .attr('transform', d => labelTransform(d.current))
             .text(d => d.data.name)
-            .style('font-size', '10px')
+            .style('font-size', '8px')
             .attr('fill', 'white');
 
         const parent = g.append('circle')
