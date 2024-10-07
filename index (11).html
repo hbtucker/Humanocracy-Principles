@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Better Businesses for Humans</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;400;600&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #191919;
+            transition: background-color 0.3s ease;
+        }
+        #chart {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .slice-label {
+            pointer-events: none;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: rgba(51, 51, 51, 0.9);
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 10px;
+            font-size: 14px;
+            max-width: 300px;
+            pointer-events: none;
+            color: #fff;
+        }
+        #darkModeToggle {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            padding: 5px 10px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+        }
+        body.light-mode {
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div id="chart">
+        <button id="darkModeToggle">Toggle Light Mode</button>
+    </div>
+    <script>
+        const data = {
+            name: "Better Businesses for Humans",
+            children: [
+                { name: "Ownership", value: 1 },
+                { name: "Meritocracy", value: 1 },
+                { name: "Markets", value: 1 },
+                { name: "Community", value: 1 },
+                { name: "Openness", value: 1 },
+                { name: "Experiment", value: 1 }
+            ]
+        };
+
+        const tooltipContent = {
+            "Ownership": "When we have a sense of ownership, we have the intrinsic motivation to go beyond the minimum to amplify the value of the thing we own, as we reap the rewards of an appreciating asset. Although not everyone can be a business owner, we can build companies where every team member has the autonomy and financial upside that allows them to feel like an owner. This is key to unlocking entrepreneurial energy and creating a company that can outrun the future.",
+            "Meritocracy": "We need companies where excellence is rewarded, not kissing ass or playing political games to increase our influence and status. We need companies where influence and compensation are correlated with competence and value-added, untainted by power politics and personal bias. An example of this is how we follow and unfollow public figures on LinkedIn. In an open market of ideas, the best and most influential will rise to prominence, so long as they create meaningful value for their followers. When someone we follow is no longer contributing valuable content, we move on. Imagine, for a moment, if leadership positions fluctuated based on feedback from their followers, free from the fixed formality that keeps many ineffective leaders in their positions for far too long.",
+            "Markets": "In a market economy, consumers have lots of choices, and it's clear that open markets are much more effective at aligning needs and resources than centrally planned economies. And yet, many of our organizations operating in the free market more closely resemble a centrally planned economy in our structure and operations. We centralize planning, budgeting, and internal services in the name of efficiency and good governance, with an army of resources (people) to serve the organization's needs. This model leaves little room for true innovation as autonomy, creativity, and ownership are starved in all but a few corners of the company, with most of the big decisions being made behind closed doors by a small sample of the brainpower available. We need organizations that utilize the distributed intelligence and adaptability that open market economies offer.",
+            "Community": "We all crave genuine community and the emotional strength and resilience that comes from being known and accepted for who we are. We need to foster deep, trust-based relationships to build psychological safety and bring out the very best in people.",
+            "Openness": "While we love the acceptance and resilience of a community, we also need an environment that cultivates curiosity, learning, and candor. We want environments that are receptive to new ideas, to be free to learn, grow, and invent.",
+            "Experiment": "There's something deeply satisfying to coming up with a new idea, testing it, perfecting it, prototyping it, and putting it to work. It's also how organizations can continually re-invent themselves and outperform the incumbents. Experiment is about turning the entire org into a laboratory, where new ideas are experimented with to discover what ideas will enable better performance, and which won't."
+        };
+
+        let width = Math.min(window.innerWidth, window.innerHeight) * 0.8;
+        let height = width;
+        let radius = width / 10;
+
+        let darkerColors = [
+            "#CC6635", "#CC9520", "#00997F", "#006ACC", "#6D6AAD", "#CC5656"
+        ];
+
+        let lighterColors = [
+            "#FF8042", "#FFBB28", "#00C49F", "#0088FE", "#8884D8", "#FF6B6B"
+        ];
+
+        let color = d3.scaleOrdinal()
+            .domain(data.children.map(d => d.name))
+            .range(darkerColors);
+
+        const partition = data => {
+            const root = d3.hierarchy(data)
+                .sum(d => d.value)
+                .sort((a, b) => b.value - a.value);
+            return d3.partition()
+                .size([2 * Math.PI, root.height + 1])
+                (root);
+        };
+
+        const root = partition(data);
+        root.each(d => d.current = d);
+
+        const svg = d3.select('#chart')
+            .append('svg')
+            .attr("viewBox", [-width / 2, -height / 2, width, height])
+            .style("font-family", "'Poppins', sans-serif")
+            .attr("style", `max-width: 100%; height: auto; display: block; margin: 0 -8px; background: #191919; cursor: pointer; font-family: 'Poppins', sans-serif;`);
+
+        const g = svg.append('g');
+
+        const arc = d3.arc()
+            .startAngle(d => d.x0)
+            .endAngle(d => d.x1)
+            .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+            .padRadius(radius * 1.5)
+            .innerRadius(0)
+            .outerRadius(d => Math.max(d.y0 * radius, d.y1 * radius - 1));
+
+        let path = g.append('g')
+            .selectAll('path')
+            .data(root.descendants().slice(1))
+            .join('path')
+            .attr('fill', d => { while (d.depth > 1) d = d.parent; return color(d.data.name); })
+            .attr('fill-opacity', d => 0.6)
+            .attr('d', d => arc(d.current));
+
+        path.filter(d => d.children)
+            .style('cursor', 'pointer')
+            .on('click', clicked);
+
+        let label = g.append('g')
+            .attr('pointer-events', 'none')
+            .attr('text-anchor', 'middle')
+            .style('user-select', 'none')
+            .selectAll('text')
+            .data(root.descendants().slice(1))
+            .join('text')
+            .attr('dy', '0.35em')
+            .attr('fill-opacity', 1)
+            .attr('transform', d => labelTransform(d.current))
+            .text(d => d.data.name)
+            .style('font-size', '10px')
+            .attr('fill', 'white');
+
+        const parent = g.append('circle')
+            .datum(root)
+            .attr('r', radius)
+            .attr('fill', 'none')
+            .attr('pointer-events', 'all')
+            .on('click', clicked);
+
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        path.on("mouseover", function(event, d) {
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+            tooltip.html(tooltipContent[d.data.name])
+                .style("left", (event.pageX) + "px")
+                .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function(d) {
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        });
+
+        function clicked(event, p) {
+            parent.datum(p.parent || root);
+
+            root.each(d => d.target = {
+                x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+                x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+                y0: Math.max(0, d.y0 - p.depth),
+                y1: Math.max(0, d.y1 - p.depth)
+            });
+
+            const t = svg.transition().duration(750);
+
+            path.transition(t)
+                .tween("data", d => {
+                    const i = d3.interpolate(d.current, d.target);
+                    return t => d.current = i(t);
+                })
+                .attr("fill-opacity", d => 0.6)
+                .attrTween("d", d => () => arc(d.current));
+
+            label.transition(t)
+                .attr("fill-opacity", d => 1)
+                .attrTween("transform", d => () => labelTransform(d.current));
+        }
+
+        function labelTransform(d) {
+            const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+            const y = (d.y0 + d.y1) / 2 * radius;
+            return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+        }
+
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        let isDarkMode = true;
+
+        function updateDarkModeToggle() {
+            darkModeToggle.textContent = isDarkMode ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+        }
+
+        darkModeToggle.addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('light-mode');
+            updateColors();
+            updateDarkModeToggle();
+        });
+
+        function updateColors() {
+            const textColor = isDarkMode ? 'white' : 'black';
+            const backgroundColor = isDarkMode ? '#191919' : '#fff';
+            
+            color.range(isDarkMode ? darkerColors : lighterColors);
+
+            svg.attr("style", `max-width: 100%; height: auto; display: block; margin: 0 -8px; background: ${backgroundColor}; cursor: pointer; font-family: 'Poppins', sans-serif;`);
+
+            path.attr('fill', d => {
+                while (d.depth > 1) d = d.parent;
+                return color(d.data.name);
+            });
+
+            label.attr('fill', textColor);
+
+            // Update tooltip styles for dark/light mode
+            tooltip.style("background-color", isDarkMode ? "rgba(51, 51, 51, 0.9)" : "rgba(255, 255, 255, 0.9)")
+                   .style("color", isDarkMode ? "#fff" : "#000")
+                   .style("border-color", isDarkMode ? "#555" : "#ddd");
+        }
+
+        // Call these functions immediately to set the initial state
+        updateColors();
+        updateDarkModeToggle();
+
+        // Make the chart responsive
+        window.addEventListener('resize', function() {
+            width = Math.min(window.innerWidth, window.innerHeight) * 0.8;
+            height = width;
+            radius = width / 10;
+
+            svg.attr("viewBox", [-width / 2, -height / 2, width, height]);
+
+            arc.innerRadius(0)
+               .outerRadius(d => Math.max(d.y0 * radius, d.y1 * radius - 1));
+
+            path.attr('d', d => arc(d.current));
+            label.attr('transform', d => labelTransform(d.current));
+        });
+    </script>
+</body>
+</html>
