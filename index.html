@@ -60,7 +60,7 @@
 </head>
 <body>
     <div id="chart">
-        <button id="darkModeToggle">Toggle Light Mode</button>
+        <button id="darkModeToggle">Light Mode</button>
     </div>
     <script>
         const data = {
@@ -224,7 +224,7 @@
         let isDarkMode = true;
 
         function updateDarkModeToggle() {
-            darkModeToggle.textContent = isDarkMode ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+            darkModeToggle.textContent = isDarkMode ? 'Light Mode' : 'Dark Mode';
         }
 
         darkModeToggle.addEventListener('click', () => {
